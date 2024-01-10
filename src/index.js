@@ -16,7 +16,7 @@ const { WalletPluginPrivateKey } = require("@wharfkit/wallet-plugin-privatekey")
 
 const program = new Command();
 
-console.log(figlet.textSync("FUCK YEAH"));
+console.log(figlet.textSync("FUCK YEA"));
 
 program
     .version("1.0.0")
