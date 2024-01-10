@@ -8,6 +8,16 @@ An EOS (and Antelope) smart contract framework so easy it'll make you say "Fuck 
 npm i -g fuckyea
 ```
 
+### Using npx
+
+You can also use `npx` for any of these commands so that you don't need to manually install first. 
+
+For instance:
+
+```
+npx fuckyea create ...
+```
+
 ## Create a new project
 
 ```
