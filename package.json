@@ -1,0 +1,35 @@
+{
+  "name": "fuckyea",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "bin": {
+    "fuckyea": "./src/index.js"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "npx tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@proton/vert": "^0.3.24",
+    "@wharfkit/session": "^1.2.2",
+    "@wharfkit/wallet-plugin-privatekey": "^1.1.0",
+    "axios": "^1.6.5",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "figlet": "^1.7.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@proton/vert": "^0.3.24",
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.10.8",
+    "chai": "^5.0.0",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.7.0",
+    "typescript": "^5.3.3"
+  }
+}
