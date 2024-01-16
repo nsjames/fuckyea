@@ -4,9 +4,9 @@
   "main": "index.js",
   "license": "",
   "scripts": {
-    "build": "fuckyea build",
-    "deploy": "fuckyea deploy",
-    "test": "fuckyea test"
+    "build": "npx fuckyea build",
+    "deploy": "npx fuckyea deploy",
+    "test": "npx fuckyea test"
   },
   "devDependencies": {
     "@proton/vert": "^0.3.24",

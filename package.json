@@ -1,6 +1,6 @@
 {
   "name": "fuckyea",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "main": "src/index.js",
   "bin": {
     "fuckyea": "./src/index.js"
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@proton/vert": "^0.3.24",
+    "@wharfkit/contract": "^1.1.2",
     "@wharfkit/session": "^1.2.2",
     "@wharfkit/wallet-plugin-privatekey": "^1.1.0",
     "axios": "^1.6.5",

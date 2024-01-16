@@ -13,6 +13,7 @@ const ApiService = require("./services/api.service");
 const axios = require('axios');
 const { Session , Chains, Serializer, ABI } = require("@wharfkit/session")
 const { WalletPluginPrivateKey } = require("@wharfkit/wallet-plugin-privatekey")
+const { Contract } = require("@wharfkit/contract")
 
 const program = new Command();
 
@@ -39,6 +40,9 @@ program.command("create <project_name> [optional_directory]")
         }
 
         fs.cpSync(path.join(__dirname, "../project-template"), projectDirectory, {recursive: true});
+
+        // renaming gitignore
+        fs.renameSync(path.join(projectDirectory, 'gitignore'), path.join(projectDirectory, '.gitignore'));
 
         fs.writeFileSync(path.join(projectDirectory, ".env"), "PRIVATE_KEY=");
 
@@ -69,7 +73,7 @@ program.command("scaffold <type(contract|test|deployment)> <name|network> [optio
         } else if(type === "test"){
             fs.cpSync(path.join(__dirname, "../project-template/tests/contract.spec.ts"), path.join(directory, `${name}.spec.ts`));
         } else if(type === "deployment"){
-            fs.cpSync(path.join(__dirname, "../project-template/deployments/eos.ts"), path.join(directory, `${name}.ts`));
+            fs.cpSync(path.join(__dirname, "../project-template/deployments/jungle.ts"), path.join(directory, `${name}.ts`));
         } else {
             console.error("Invalid type", type);
         }
@@ -161,19 +165,18 @@ program.command("deploy <network>")
         }
 
 
-        if(!config.networks[network].account){
+        if(!config.networks[network].accounts){
             console.error("Malformed network account for", network);
             return;
         }
 
-        const {name: accountName, permission, private_key} = config.networks[network].account;
-        const {chain, node_url} = config.networks[network];
-
-        if(!private_key || !private_key.length){
-            console.error("No private key specified in network config")
+        const accounts = config.networks[network].accounts;
+        if(!accounts || !accounts.length){
+            console.error("No accounts available for", network);
             return;
         }
 
+        const {chain, node_url} = config.networks[network];
 
         let _chain = chain ? Chains[chain] : null;
         if(!_chain){
@@ -191,115 +194,152 @@ program.command("deploy <network>")
             }
         }
 
+        const sessions = {};
+        for(let i = 0; i < accounts.length; i++){
+            let {name, permission, private_key} = accounts[i];
 
-        const walletPlugin = new WalletPluginPrivateKey(private_key);
-        const session = new Session({
-            actor: accountName,
-            permission: permission || 'active',
-            chain: _chain,
-            walletPlugin,
-        })
+            if(!permission){
+                permission = 'active';
+            }
 
-        try {
-            const deploymentFunction = require(path.join(process.cwd(), deployment));
-            deploymentFunction(async (contractPath) => {
-                // check if account exists
-                const accountExists = await session.client.v1.chain.get_account(accountName).then(x => true).catch(err => false);
-                if(!accountExists){
-                    // TODO: Add creation logic later
-                    console.error("Account does not exist:", accountName, "and creation is not supported. Please create the account manually and try again.");
-                    process.exit(1);
-                }
+            if(!name || !name.length){
+                console.error(`No account name specified in network config (index: ${i})`)
+                return;
+            }
 
-                const contractName = contractPath.split('/').pop();
-                const contractPathWithoutName = contractPath.replace(`/${contractName}`, '');
-                const wasm = fs.readFileSync(path.join(contractPathWithoutName, `${contractName}.wasm`));
-                const abi = fs.readFileSync(path.join(contractPathWithoutName, `${contractName}.abi`));
+            if(!private_key || !private_key.length){
+                console.error(`No private key specified in network config (index: ${i})`)
+                return;
+            }
 
-                const estimatedRam = (wasm.byteLength * 10) + JSON.stringify(abi).length;
-
-                const accountInfo = await session.client.v1.chain.get_account(session.actor).catch(err => {
-                    console.error(err);
-                    return {
-                        ram_quota: 0,
-                    };
-                });
-
-                let previousCodeSize = 0;
-                if(accountInfo.last_code_update.toString() !== '1970-01-01T00:00:00.000'){
-                    const previousCode = await axios.post(`${session.chain.url}/v1/chain/get_code`, {
-                        account_name: session.actor.toString(),
-                        code_as_wasm: true,
-                    }).then(x => x.data).catch(err => {
-                        console.error(err);
-                        return {
-                            code_hash: '',
-                            wasm: '',
-                            abi: {},
-                        };
-                    });
-                    previousCodeSize = (previousCode.wasm.length * 10) + JSON.stringify(previousCode.abi || "").length;
-                }
-
-                const freeRam = parseInt(accountInfo.ram_quota.toString()) - parseInt(accountInfo.ram_usage.toString());
-                const extraRamRequired = estimatedRam - previousCodeSize;
-
-                const ramRequired = freeRam > extraRamRequired ? 0 : extraRamRequired - freeRam;
-
-                let actions = [{
-                    account: 'eosio',
-                    name: 'setcode',
-                    authorization: [session.permissionLevel],
-                    data: {
-                        account: session.actor,
-                        vmtype: 0,
-                        vmversion: 0,
-                        code: wasm,
-                    },
-                },{
-                    account: 'eosio',
-                    name: 'setabi',
-                    authorization: [session.permissionLevel],
-                    data: {
-                        account: session.actor,
-                        abi: Serializer.encode({
-                            object: abi,
-                            type: ABI
-                        }),
-                    },
-                }];
-
-                if(ramRequired > 0){
-                    actions.unshift({
-                        account: 'eosio',
-                        name: 'buyrambytes',
-                        authorization: [session.permissionLevel],
-                        data: {
-                            // @ts-ignore
-                            payer: session.actor,
-                            receiver: session.actor,
-                            bytes: ramRequired,
-                        },
-                    });
-                }
-
-                return await session.transact({ actions }).then(x => {
-                    console.log(`Contract deployed!`)
-                    console.log(`Transaction hash: ${x.response.transaction_id}`);
-                    return true;
-                }).catch(err => {
-                    if(err.toString().indexOf("contract is already running this version of code") > -1){
-                        console.warn(`Contract already deployed with same code`)
-                        return true;
-                    }
-                    console.error(err);
-                    return false;
-                });
+            const walletPlugin = new WalletPluginPrivateKey(private_key);
+            sessions[name] = new Session({
+                actor: name,
+                permission: permission || 'active',
+                chain: _chain,
+                walletPlugin,
             });
-        } catch(e){
-            console.error("Error deploying", e);
         }
 
+        const deploymentFunction = require(path.join(process.cwd(), deployment));
+
+
+        const tester = {
+            accounts,
+            sessions,
+            deploy: async (accountName, contractPath) => {
+                try {
+                    const session = sessions[accountName];
+                    if(!session){
+                        console.error("No session found for", accountName);
+                        return false;
+                    }
+
+                    const accountExists = await session.client.v1.chain.get_account(accountName).then(x => true).catch(err => false);
+                    if(!accountExists){
+                        // TODO: Add creation logic later
+                        console.error("Account does not exist:", accountName, "and creation is not supported. Please create the account manually and try again.");
+                        process.exit(1);
+                    }
+
+                    const contractName = contractPath.split('/').pop();
+                    const contractPathWithoutName = contractPath.replace(`/${contractName}`, '');
+                    const wasm = fs.readFileSync(path.join(contractPathWithoutName, `${contractName}.wasm`));
+                    const abi = fs.readFileSync(path.join(contractPathWithoutName, `${contractName}.abi`));
+
+                    const estimatedRam = (wasm.byteLength * 10) + JSON.stringify(abi).length;
+
+                    const accountInfo = await session.client.v1.chain.get_account(session.actor).catch(err => {
+                        console.error(err);
+                        return {
+                            ram_quota: 0,
+                        };
+                    });
+
+                    let previousCodeSize = 0;
+                    if(accountInfo.last_code_update.toString() !== '1970-01-01T00:00:00.000'){
+                        const previousCode = await axios.post(`${session.chain.url}/v1/chain/get_code`, {
+                            account_name: session.actor.toString(),
+                            code_as_wasm: true,
+                        }).then(x => x.data).catch(err => {
+                            console.error(err);
+                            return {
+                                code_hash: '',
+                                wasm: '',
+                                abi: {},
+                            };
+                        });
+                        previousCodeSize = (previousCode.wasm.length * 10) + JSON.stringify(previousCode.abi || "").length;
+                    }
+
+                    const freeRam = parseInt(accountInfo.ram_quota.toString()) - parseInt(accountInfo.ram_usage.toString());
+                    const extraRamRequired = estimatedRam - previousCodeSize;
+
+                    const ramRequired = freeRam > extraRamRequired ? 0 : extraRamRequired - freeRam;
+
+                    let actions = [{
+                        account: 'eosio',
+                        name: 'setcode',
+                        authorization: [session.permissionLevel],
+                        data: {
+                            account: session.actor,
+                            vmtype: 0,
+                            vmversion: 0,
+                            code: wasm,
+                        },
+                    },{
+                        account: 'eosio',
+                        name: 'setabi',
+                        authorization: [session.permissionLevel],
+                        data: {
+                            account: session.actor,
+                            abi: Serializer.encode({
+                                object: abi,
+                                type: ABI
+                            }),
+                        },
+                    }];
+
+                    if(ramRequired > 0){
+                        actions.unshift({
+                            account: 'eosio',
+                            name: 'buyrambytes',
+                            authorization: [session.permissionLevel],
+                            data: {
+                                // @ts-ignore
+                                payer: session.actor,
+                                receiver: session.actor,
+                                bytes: ramRequired,
+                            },
+                        });
+                    }
+
+                    const contractInstance = new Contract({
+                        abi: JSON.parse(abi.toString()),
+                        account: session.actor,
+                        client: session.client,
+                    });
+
+                    return await session.transact({ actions }).then(x => {
+                        console.log(`Contract deployed!`)
+                        console.log(`Transaction hash: ${x.response.transaction_id}`);
+
+                        return contractInstance;
+                    }).catch(err => {
+                        if(err.toString().indexOf("contract is already running this version of code") > -1){
+                            console.warn(`Contract already deployed with same code`)
+                            return contractInstance;
+                        }
+                        console.error(err);
+                        return false;
+                    });
+                } catch (e) {
+                    console.error(`Error deploying`, e);
+                }
+            },
+        }
+
+        await deploymentFunction(tester);
     })
 
 program.command("test")

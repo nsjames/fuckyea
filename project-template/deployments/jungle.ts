@@ -1,6 +1,7 @@
-module.exports = async (deploy) => {
+module.exports = async (tester) => {
+
     // the returned value will be a wharfkit contract object
-    const contract = await deploy('build/contract').catch(err => {
+    const contract = await tester.deploy('youraccount', 'build/contract').catch(err => {
         console.error(err)
         process.exit(1);
     })

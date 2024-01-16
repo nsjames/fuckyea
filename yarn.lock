@@ -175,7 +175,7 @@
   dependencies:
     undici-types "~5.26.4"
 
-"@wharfkit/abicache@^1.2.1":
+"@wharfkit/abicache@^1.2.0", "@wharfkit/abicache@^1.2.1":
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/@wharfkit/abicache/-/abicache-1.2.2.tgz#c3d83485e3e3782ac94ced460915bad1ceee0be9"
   integrity sha512-yOsYz2qQpQy7Nb8XZj62pZqp8YnmWDqFlrenYksBb9jl+1aWIpFhWd+14VEez4tUAezRH4UWW+w1SX5vhmUY9A==
@@ -202,6 +202,16 @@
   resolved "https://registry.yarnpkg.com/@wharfkit/common/-/common-1.2.0.tgz#147f783f2ba5cc6fa7dd75863ba98dd05880a9aa"
   integrity sha512-me/BN8D/4UPkY7yt+4v+E/z62PVj4VKY5+iRb7zoWv0epbW4o4nC6Oer8kBVL7xWC6Guucaol3hkxkTMgrnwlQ==
   dependencies:
+    tslib "^2.1.0"
+
+"@wharfkit/contract@^1.1.2":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@wharfkit/contract/-/contract-1.1.2.tgz#aa9162e2a66c5a2b708d19f64666b8f0f334d9f9"
+  integrity sha512-Ephe9p/aUl+ZycKNFZO5zXGqhlZCxly2MAFtJ9vx8SvhLRJidrmNB0rrGtbPwfJnoNcTfwidnYu/J8LTcvXoew==
+  dependencies:
+    "@wharfkit/abicache" "^1.2.0"
+    "@wharfkit/antelope" "^1.0.0"
+    "@wharfkit/signing-request" "^3.1.0"
     tslib "^2.1.0"
 
 "@wharfkit/session@^1.2.2":
