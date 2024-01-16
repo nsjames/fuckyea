@@ -61,7 +61,7 @@ In the `networks` key, you can define any key you want that matches a file in th
 ## Need help?
 
 ```
-fuckyeah --help
+fuckyea --help
 ```
 
 Or come to the antelop devs chat: https://t.me/antelopedevs
