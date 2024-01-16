@@ -77,7 +77,7 @@ program.command("scaffold <type(contract|test|deployment)> <name|network> [optio
 
 const build = async () => {
     console.log("Building contracts");
-    const projectFiles = globSync("contracts/**/*.{cpp,c,h}").map(filepath => {
+    const projectFiles = globSync("contracts/**/*.{cpp,c,h,hpp}").map(filepath => {
         const fileinfo = path.parse(filepath);
         const content = fs.readFileSync(filepath).toString();
         return {
