@@ -14,6 +14,11 @@ const axios = require('axios');
 const { Session , Chains, Serializer, ABI } = require("@wharfkit/session")
 const { WalletPluginPrivateKey } = require("@wharfkit/wallet-plugin-privatekey")
 const { Contract } = require("@wharfkit/contract")
+const { createHash } = require('crypto');
+
+const sha256 = (data) => {
+    return createHash('sha256').update(data).digest('hex')
+}
 
 const program = new Command();
 
@@ -245,7 +250,7 @@ program.command("deploy <network>")
                     const contractName = contractPath.split('/').pop();
                     const contractPathWithoutName = contractPath.replace(`/${contractName}`, '');
                     const wasm = fs.readFileSync(path.join(contractPathWithoutName, `${contractName}.wasm`));
-                    const abi = fs.readFileSync(path.join(contractPathWithoutName, `${contractName}.abi`));
+                    const abi = JSON.parse(fs.readFileSync(path.join(contractPathWithoutName, `${contractName}.abi`)).toString());
 
                     const estimatedRam = (wasm.byteLength * 10) + JSON.stringify(abi).length;
 
@@ -257,6 +262,7 @@ program.command("deploy <network>")
                     });
 
                     let previousCodeSize = 0;
+                    let previousHashes = [null,null];
                     if(accountInfo.last_code_update.toString() !== '1970-01-01T00:00:00.000'){
                         const previousCode = await axios.post(`${session.chain.url}/v1/chain/get_code`, {
                             account_name: session.actor.toString(),
@@ -270,6 +276,7 @@ program.command("deploy <network>")
                             };
                         });
                         previousCodeSize = (previousCode.wasm.length * 10) + JSON.stringify(previousCode.abi || "").length;
+                        previousHashes = [previousCode.code_hash, previousCode.abi ? sha256(JSON.stringify(previousCode.abi)) : null];
                     }
 
                     const freeRam = parseInt(accountInfo.ram_quota.toString()) - parseInt(accountInfo.ram_usage.toString());
@@ -277,28 +284,43 @@ program.command("deploy <network>")
 
                     const ramRequired = freeRam > extraRamRequired ? 0 : extraRamRequired - freeRam;
 
-                    let actions = [{
-                        account: 'eosio',
-                        name: 'setcode',
-                        authorization: [session.permissionLevel],
-                        data: {
-                            account: session.actor,
-                            vmtype: 0,
-                            vmversion: 0,
-                            code: wasm,
-                        },
-                    },{
-                        account: 'eosio',
-                        name: 'setabi',
-                        authorization: [session.permissionLevel],
-                        data: {
-                            account: session.actor,
-                            abi: Serializer.encode({
-                                object: abi,
-                                type: ABI
-                            }),
-                        },
-                    }];
+                    const wasmHash = sha256(wasm);
+                    const abiHash = sha256(JSON.stringify(abi));
+
+                    let actions = [];
+                    if(previousHashes[0] !== wasmHash){
+                        actions.push({
+                            account: 'eosio',
+                            name: 'setcode',
+                            authorization: [session.permissionLevel],
+                            data: {
+                                account: session.actor,
+                                vmtype: 0,
+                                vmversion: 0,
+                                code: wasm,
+                            },
+                        });
+                    }
+
+                    if(previousHashes[1] !== abiHash){
+                        actions.push({
+                            account: 'eosio',
+                            name: 'setabi',
+                            authorization: [session.permissionLevel],
+                            data: {
+                                account: session.actor,
+                                abi: Serializer.encode({
+                                    object: abi,
+                                    type: ABI
+                                }),
+                            },
+                        });
+                    }
+
+                    if(!actions.length){
+                        console.log(`Contract already deployed with same code and abi`)
+                        return true;
+                    }
 
                     if(ramRequired > 0){
                         actions.unshift({
@@ -315,7 +337,7 @@ program.command("deploy <network>")
                     }
 
                     const contractInstance = new Contract({
-                        abi: JSON.parse(abi.toString()),
+                        abi,
                         account: session.actor,
                         client: session.client,
                     });
