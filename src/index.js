@@ -235,7 +235,10 @@ program.command("deploy <network>")
         const tester = {
             accounts,
             sessions,
-            deploy: async (accountName, contractPath) => {
+            deploy: async (accountName, contractPath, options = {}) => {
+
+                const {addCode = false} = options;
+
                 try {
                     const session = sessions[accountName];
                     if(!session){
@@ -257,7 +260,9 @@ program.command("deploy <network>")
 
                     const estimatedRam = (wasm.byteLength * 10) + JSON.stringify(abi).length;
 
-                    const accountInfo = await session.client.v1.chain.get_account(session.actor).catch(err => {
+                    const accountInfo = await session.client.v1.chain.get_account(session.actor)
+                        .then(x => JSON.parse(JSON.stringify(x)))
+                        .catch(err => {
                         console.error(err);
                         return {
                             ram_quota: 0,
@@ -318,6 +323,41 @@ program.command("deploy <network>")
                                 }),
                             },
                         });
+                    }
+
+                    if(addCode){
+                        if(!accountInfo.permissions){
+                            console.error(`No permissions found for ${session.actor}`);
+                            return false;
+                        }
+
+                        const newActivePermission = accountInfo.permissions.find(x => x.perm_name === 'active').required_auth;
+                        if(!newActivePermission){
+                            console.error(`No active permission found for ${session.actor}`);
+                            return false;
+                        }
+
+                        if(!newActivePermission.accounts.find(x => x.permission.actor === session.actor && x.permission.permission === 'eosio.code')){
+                            newActivePermission.accounts.push({
+                                permission: {
+                                    actor: session.actor,
+                                    permission: 'eosio.code',
+                                },
+                                weight: 1,
+                            });
+
+                            actions.push({
+                                account: 'eosio',
+                                name: 'updateauth',
+                                authorization: [session.permissionLevel],
+                                data: {
+                                    account: session.actor,
+                                    permission: 'active',
+                                    parent: 'owner',
+                                    auth: newActivePermission
+                                },
+                            });
+                        }
                     }
 
                     if(!actions.length){
