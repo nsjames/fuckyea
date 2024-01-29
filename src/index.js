@@ -13,6 +13,7 @@ const ApiService = require("./services/api.service");
 const axios = require('axios');
 const { Session , Chains, Serializer, ABI } = require("@wharfkit/session")
 const { WalletPluginPrivateKey } = require("@wharfkit/wallet-plugin-privatekey")
+const {TransactPluginResourceProvider} = require('@wharfkit/transact-plugin-resource-provider');
 const { Contract } = require("@wharfkit/contract")
 const { createHash } = require('crypto');
 
@@ -223,6 +224,8 @@ program.command("deploy <network>")
                 permission: permission || 'active',
                 chain: _chain,
                 walletPlugin,
+            }, {
+                transactPlugins: [new TransactPluginResourceProvider()],
             });
         }
 
