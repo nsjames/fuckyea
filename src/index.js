@@ -337,7 +337,7 @@ program.command("deploy <network>")
                             return false;
                         }
 
-                        if(!newActivePermission.accounts.find(x => x.permission.actor === session.actor && x.permission.permission === 'eosio.code')){
+                        if(!newActivePermission.accounts.find(x => x.permission.actor === session.actor.toString() && x.permission.permission === 'eosio.code')){
                             newActivePermission.accounts.push({
                                 permission: {
                                     actor: session.actor,
