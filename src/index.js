@@ -10,6 +10,7 @@ const { exec } = require("child_process");
 const Mocha = require('mocha');
 const {globSync} = require('glob')
 const ApiService = require("./services/api.service");
+const IdService = require('./services/id.service');
 const axios = require('axios');
 const { Session , Chains, Serializer, ABI } = require("@wharfkit/session")
 const { WalletPluginPrivateKey } = require("@wharfkit/wallet-plugin-privatekey")
@@ -90,14 +91,17 @@ const build = async () => {
     const projectFiles = globSync("contracts/**/*.{cpp,c,h,hpp}").map(filepath => {
         const fileinfo = path.parse(filepath);
         const content = fs.readFileSync(filepath).toString();
+        let filePath = fileinfo.dir.replace(path.join('contracts'), '').replace(/\\/g,"/");
+        if(filePath.startsWith('/')) filePath = filePath.substring(1);
+        if(filePath.length && !filePath.endsWith('/')) filePath += '/';
         return {
             name: fileinfo.base,
-            path: fileinfo.dir.replace(path.join('contracts'), '').replace(/^\//, '').replace(/^\\/, ''),
+            path: filePath,
             content,
         }
     })
 
-    const id = 'contract-12345678-1234-1234-12345678';
+    const id = IdService.getProjectId();
 
     const projectNameFromPackageJson = JSON.parse(fs.readFileSync('package.json').toString()).name;
     const project = {
@@ -117,16 +121,18 @@ const build = async () => {
         return;
     }
 
-    const {wasm, abi} = result;
+    const buildableFiles = result;
     const buildFolder = path.join(process.cwd(), 'build');
     try { fs.rmSync(buildFolder, {recursive: true}); } catch (e) { }
     fs.mkdirSync(buildFolder);
 
-    const downloadedWasm = await axios.get(wasm, { responseType: 'arraybuffer' }).then(x => x.data).catch((err) => console.log('err', err));
-    const downloadedAbi = await axios.get(abi, { responseType: 'arraybuffer' }).then(x => x.data).catch((err) => console.log('err', err));
+    await Promise.all(buildableFiles.map(async ({wasm, abi, name}) => {
+        const downloadedWasm = await axios.get(wasm, { responseType: 'arraybuffer' }).then(x => x.data).catch((err) => console.log('err', err));
+        const downloadedAbi = await axios.get(abi, { responseType: 'arraybuffer' }).then(x => x.data).catch((err) => console.log('err', err));
 
-    fs.writeFileSync(path.join(buildFolder, 'contract.wasm'), downloadedWasm);
-    fs.writeFileSync(path.join(buildFolder, 'contract.abi'), downloadedAbi);
+        fs.writeFileSync(path.join(buildFolder, `${name}.wasm`), downloadedWasm);
+        fs.writeFileSync(path.join(buildFolder, `${name}.abi`), downloadedAbi);
+    }));
 }
 
 program.command("build")

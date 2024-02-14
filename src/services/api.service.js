@@ -1,6 +1,10 @@
 const WebSocket = require('ws');
+const path = require('path');
+const fs = require('fs');
 const API_URL = 'https://api.ide.eosnetwork.com';
 const WS_URL = "wss://api.ide.eosnetwork.com/websocket";
+// const API_URL = 'http://192.168.46.177:3001';
+// const WS_URL = "ws://192.168.46.177:3001";
 
 
 let socket;
@@ -38,15 +42,33 @@ module.exports = class ApiService {
 
                     if(json.data.success){
                         if(buildResolver){
-                            const wasm = `${API_URL}/v1/download/wasm/${json.data.data}`;
-                            const abi = `${API_URL}/v1/download/abi/${json.data.data}`;
 
-                            buildResolver({wasm, abi});
+                            const allFiles = fs.readdirSync(path.join(process.cwd(), 'contracts'));
+                            const hasEntryContracts = allFiles.filter((x) => x.endsWith(".entry.cpp")).length > 0;
+
+                            const buildableFiles = (() => {
+                                if(hasEntryContracts) return allFiles.filter((x) => x.endsWith(".entry.cpp"));
+                                return allFiles.filter((x) => x.endsWith(".cpp"));
+                            })().map(x => {
+                                const contractName = x.replace('.entry.cpp', '').replace('.cpp', '');
+                                return {
+                                    name: contractName,
+                                    wasm: `${API_URL}/v1/download/wasm/${json.data.data}/${contractName}`,
+                                    abi: `${API_URL}/v1/download/abi/${json.data.data}/${contractName}`
+                                }
+                            })
+
+
+
+                            buildResolver(buildableFiles);
                             buildResolver = null;
                         }
                     } else {
                         if(buildResolver){
-                            console.error(json.data);
+                            console.error(`There was an error building the contract`)
+                            console.log('-------------------------------------------------')
+                            console.error(json.data.data);
+                            console.log('-------------------------------------------------')
                             buildResolver(null);
                             buildResolver = null;
                         }
