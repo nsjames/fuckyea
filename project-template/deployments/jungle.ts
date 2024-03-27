@@ -7,9 +7,9 @@
 }
  */
 
-module.exports = async (tester) => {
+module.exports = async (deployer) => {
 
-    const contract = await tester.deploy('youraccount', 'build/contract', {
+    const contract = await deployer.deploy('youraccount', 'build/contract', {
         // adds the `eosio.code` permission to the contract account's active permission
         // so that you can send inline actions from the contract in its name
         addCode: true
