@@ -416,6 +416,7 @@ program.command("deploy <network>")
 program.command("test")
     .description("Run all tests")
     .option("-b, --build", "Build before running tests")
+    .option("-t, --test <test_name>", "Run a specific test")
     .action(async (options) => {
         const hasBuiltContracts = fs.existsSync(path.join(process.cwd(), 'build')) && globSync("build/*.wasm").length > 0;
         if(options.build || !hasBuiltContracts){
@@ -427,7 +428,12 @@ program.command("test")
             color: true,
         });
 
-        const files = globSync("tests/**/*.spec.{ts,js}");
+        let glob = "tests/**/*.spec.{ts,js}";
+        if(options.test){
+            glob = options.test;
+        }
+
+        const files = globSync(glob);
 
         files.forEach(file => {
             mocha.addFile(file);
