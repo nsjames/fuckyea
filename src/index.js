@@ -446,6 +446,7 @@ program.command("starter <project_name> <path_to_clone_to>")
     .description("Start a new project from a starter kit")
     .action(async (project_name, path_to_clone_to) => {
         console.log(`Starting a new project from ${project_name} as ${path_to_clone_to}`);
+        project_name = project_name.trim().toLowerCase();
 
         if(fs.existsSync(path_to_clone_to)){
             console.error(`Folder already exists at ${path_to_clone_to}`);
@@ -462,11 +463,19 @@ program.command("starter <project_name> <path_to_clone_to>")
         }
 
         executeCommandOrExit('git --version');
-        executeCommandOrExit(`rm -rf ${path_to_clone_to}`);
         executeCommandOrExit(`git clone --no-checkout https://github.com/eosnetworkfoundation/template-projects.git ${path_to_clone_to}`);
         executeCommandOrExit(`git sparse-checkout init --cone`, path_to_clone_to);
         executeCommandOrExit(`git sparse-checkout set ${project_name}`, path_to_clone_to);
         executeCommandOrExit(`git checkout`, path_to_clone_to);
+
+
+        if(!fs.existsSync(path.join(path_to_clone_to, project_name))){
+            // roll back
+            fs.rmdirSync(path_to_clone_to, {recursive: true});
+            console.error(`No starter kit found with the name ${project_name}.`);
+            console.error(`Check the project name at https://github.com/eosnetworkfoundation/template-projects`);
+            process.exit(1);
+        }
 
         for(let file of fs.readdirSync(path_to_clone_to)){
             if(file !== project_name){
