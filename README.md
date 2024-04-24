@@ -48,6 +48,11 @@ fuckyea test [--build]
 fuckyea deploy <network> [--build]
 ```
 
+## Want to use a starter kit?
+
+Head over to [the EOS Template Projects Repo](https://github.com/eosnetworkfoundation/template-projects) and see how you can use
+fuckyea to generate starterkit templates.
+
 ## Configs
 
 When you create a project you get a `fuckyea.config.js` file and a `.env` file. 
