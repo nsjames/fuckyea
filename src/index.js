@@ -6,7 +6,7 @@ const figlet = require("figlet");
 const { Command } = require("commander");
 const fs = require("fs");
 const path = require("path");
-const { exec } = require("child_process");
+const { exec, execSync } = require("child_process");
 const Mocha = require('mocha');
 const {globSync} = require('glob')
 const ApiService = require("./services/api.service");
@@ -442,6 +442,48 @@ program.command("test")
         await mocha.run();
     })
 
+program.command("starter <project_name> <path_to_clone_to>")
+    .description("Start a new project from a starter kit")
+    .action(async (project_name, path_to_clone_to) => {
+        console.log(`Starting a new project from ${project_name} as ${path_to_clone_to}`);
+
+        if(fs.existsSync(path_to_clone_to)){
+            console.error(`Folder already exists at ${path_to_clone_to}`);
+            return;
+        }
+
+        const executeCommandOrExit = (command, cwd = process.cwd()) => {
+            try {
+                return execSync(command, {cwd}).toString();
+            } catch (e) {
+                console.error(e);
+                process.exit(1);
+            }
+        }
+
+        executeCommandOrExit('git --version');
+        executeCommandOrExit(`rm -rf ${path_to_clone_to}`);
+        executeCommandOrExit(`git clone --no-checkout https://github.com/eosnetworkfoundation/template-projects.git ${path_to_clone_to}`);
+        executeCommandOrExit(`git sparse-checkout init --cone`, path_to_clone_to);
+        executeCommandOrExit(`git sparse-checkout set ${project_name}`, path_to_clone_to);
+        executeCommandOrExit(`git checkout`, path_to_clone_to);
+
+        for(let file of fs.readdirSync(path_to_clone_to)){
+            if(file !== project_name){
+                fs.rmSync(path.join(path_to_clone_to, file), {recursive: true});
+            }
+        }
+
+        const filesToMove = fs.readdirSync(path.join(path_to_clone_to, project_name));
+        filesToMove.forEach(file => {
+            fs.renameSync(path.join(path_to_clone_to, project_name, file), path.join(path_to_clone_to, file));
+        });
+
+        fs.rmdirSync(path.join(path_to_clone_to, project_name));
+
+        console.log(`Finished setting up your project.`)
+        console.log(`Go into your new project folder and read the README to get started.`)
+    })
 
 program.parse(process.argv);
 
