@@ -1,6 +1,6 @@
 {
   "name": "fuckyea",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "main": "src/index.js",
   "bin": {
     "fuckyea": "./src/index.js"
@@ -11,10 +11,10 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "@proton/vert": "^0.3.24",
-    "@wharfkit/contract": "^1.1.2",
-    "@wharfkit/session": "^1.2.2",
-    "@wharfkit/transact-plugin-resource-provider": "^1.1.0",
+    "@eosnetwork/vert": "^1.0.0",
+    "@wharfkit/contract": "^1.1.5",
+    "@wharfkit/session": "^1.3.0",
+    "@wharfkit/transact-plugin-resource-provider": "^1.1.1",
     "@wharfkit/wallet-plugin-privatekey": "^1.1.0",
     "axios": "^1.6.5",
     "commander": "^11.1.0",
@@ -25,7 +25,6 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "@proton/vert": "^0.3.24",
     "@types/chai": "^4.3.11",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.8",

@@ -1,4 +1,4 @@
-const { Blockchain, nameToBigInt } = require("@proton/vert");
+const { Blockchain, nameToBigInt } = require("@eosnetwork/vert");
 const { assert } = require("chai");
 const blockchain = new Blockchain()
 
