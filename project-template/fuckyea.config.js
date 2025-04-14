@@ -1,7 +1,7 @@
 module.exports = {
     networks:{
         jungle: {
-            // node_url: 'https://eos.greymass.com',
+            // node_url: 'https://vaulta.greymass.com',
             chain: 'Jungle4',
             accounts: [
                 {

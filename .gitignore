@@ -2,4 +2,5 @@
 .vscode
 tester/
 node_modules/
+bun.lockb
 

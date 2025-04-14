@@ -304,7 +304,7 @@ program.command("deploy <network>")
                     let actions = [];
                     if(previousHashes[0] !== wasmHash){
                         actions.push({
-                            account: 'eosio',
+                            account: 'core.vaulta',
                             name: 'setcode',
                             authorization: [session.permissionLevel],
                             data: {
@@ -318,7 +318,7 @@ program.command("deploy <network>")
 
                     if(previousHashes[1] !== abiHash){
                         actions.push({
-                            account: 'eosio',
+                            account: 'core.vaulta',
                             name: 'setabi',
                             authorization: [session.permissionLevel],
                             data: {
@@ -353,7 +353,7 @@ program.command("deploy <network>")
                             });
 
                             actions.push({
-                                account: 'eosio',
+                                account: 'core.vaulta',
                                 name: 'updateauth',
                                 authorization: [session.permissionLevel],
                                 data: {
@@ -373,7 +373,7 @@ program.command("deploy <network>")
 
                     if(ramRequired > 0){
                         actions.unshift({
-                            account: 'eosio',
+                            account: 'core.vaulta',
                             name: 'buyrambytes',
                             authorization: [session.permissionLevel],
                             data: {
@@ -463,7 +463,7 @@ program.command("starter <project_name> <path_to_clone_to>")
         }
 
         executeCommandOrExit('git --version');
-        executeCommandOrExit(`git clone --no-checkout https://github.com/eosnetworkfoundation/template-projects.git ${path_to_clone_to}`);
+        executeCommandOrExit(`git clone --no-checkout https://github.com/vaultafoundation/template-projects.git ${path_to_clone_to}`);
         executeCommandOrExit(`git sparse-checkout init --cone`, path_to_clone_to);
         executeCommandOrExit(`git sparse-checkout set ${project_name}`, path_to_clone_to);
         executeCommandOrExit(`git checkout`, path_to_clone_to);
@@ -473,7 +473,7 @@ program.command("starter <project_name> <path_to_clone_to>")
             // roll back
             fs.rmdirSync(path_to_clone_to, {recursive: true});
             console.error(`No starter kit found with the name ${project_name}.`);
-            console.error(`Check the project name at https://github.com/eosnetworkfoundation/template-projects`);
+            console.error(`Check the project name at https://github.com/vaultafoundation/template-projects`);
             process.exit(1);
         }
 

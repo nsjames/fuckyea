@@ -1,6 +1,6 @@
 # FUCK YEA Smart Contract Framework
 
-An EOS (and Antelope) smart contract framework so easy it'll make you say "Fuck Yea".
+A Vaulta smart contract framework so easy it'll make you say "Fuck Yea".
 
 ## Installation
 
@@ -50,8 +50,8 @@ fuckyea deploy <network> [--build]
 
 ## Want to use a starter kit?
 
-Head over to [the EOS Template Projects Repo](https://github.com/eosnetworkfoundation/template-projects) and see how you can use
-fuckyea to generate starterkit templates.
+Head over to [the Vaulta Template Projects Repo](https://github.com/vaultafoundation/template-projects) and see how 
+you can use fuckyea to generate starterkit templates.
 
 ## Configs
 
