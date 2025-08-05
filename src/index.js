@@ -22,12 +22,14 @@ const sha256 = (data) => {
     return createHash('sha256').update(data).digest('hex')
 }
 
+const packageJson = require('../package.json');
+
 const program = new Command();
 
 console.log(figlet.textSync("FUCK YEA"));
 
 program
-    .version("1.0.0")
+    .version(packageJson.version)
     .description("A command line interface for working with Antelope Smart Contracts")
     .action(() => {
 
